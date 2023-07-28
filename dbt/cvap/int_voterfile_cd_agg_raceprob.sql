@@ -24,8 +24,6 @@ with base as (
         , bin_partyreg
 
         --models
-        , partisanshippropensity
-        , votepropensity
         , bin_partisanshippropensity
         , bin_votepropensity
 
@@ -40,7 +38,7 @@ with base as (
         , sum(case when voterstatus = 'active' then {{ column }} end) as regvoters_tot_active
         , sum(case when voterstatus = 'inactive' then {{ column }} end) as regvoters_tot_inactive
         from base
-        {{ dbt_utils.group_by(13)}}
+        {{ dbt_utils.group_by(11)}}
     )
 {% endfor %}
 
