@@ -2,7 +2,7 @@
 
 with base as (
     select * 
-    from {{ ref("int_catalist_cd_agg_raceprob") }} 
+    from {{ ref("int_voterfile_cd_agg_raceprob") }} 
 )
 
 , pivoted as (
@@ -15,17 +15,15 @@ with base as (
     , sum(regvoters_tot) as regvoters_tot
     , sum(regvoters_tot_active) as regvoters_tot_active
     , sum(regvoters_tot_inactive) as regvoters_tot_inactive
-    , avg(vci) as avg_vci 
-    , avg(voteprop) as avg_voteprop
 
     /*sum pivots*/
     
     --regvoters_tot
-    , {% for demo in ['bin_race','bin_race_bipoc','bin_gender','bin_age','bin_partyreg','bin_vci','bin_voteprop','e2020g','e2022g'] %}              
+    , {% for demo in ['bin_race','bin_race_bipoc','bin_gender','bin_age','bin_partyreg','bin_partisanshippropensity','bin_votepropensity','e2020g','e2022g'] %}              
         {{dbt_utils.pivot(
             demo,
             dbt_utils.get_column_values(
-                ref("int_catalist_cd_agg_raceprob")
+                ref("int_voterfile_cd_agg_raceprob")
                     , demo
                     , order_by=demo
                     ),
@@ -37,11 +35,11 @@ with base as (
     {% endfor %}
     
     --regvoters_tot_active
-    , {% for demo in ['bin_race','bin_race_bipoc','bin_gender','bin_age','bin_partyreg','bin_vci','bin_voteprop','e2020g','e2022g'] %}              
+    , {% for demo in ['bin_race','bin_race_bipoc','bin_gender','bin_age','bin_partyreg','bin_partisanshippropensity','bin_votepropensity','e2020g','e2022g'] %}              
         {{dbt_utils.pivot(
             demo,
             dbt_utils.get_column_values(
-                ref("int_catalist_cd_agg_raceprob")
+                ref("int_voterfile_cd_agg_raceprob")
                     , demo
                     , order_by=demo
                     ),
@@ -53,11 +51,11 @@ with base as (
     {% endfor %}
 
     --regvoters_tot_inactive
-    , {% for demo in ['bin_race','bin_race_bipoc','bin_gender','bin_age','bin_partyreg','bin_vci','bin_voteprop','e2020g','e2022g'] %}              
+    , {% for demo in ['bin_race','bin_race_bipoc','bin_gender','bin_age','bin_partyreg','bin_partisanshippropensity','bin_votepropensity','e2020g','e2022g'] %}              
         {{dbt_utils.pivot(
             demo,
             dbt_utils.get_column_values(
-                ref("int_catalist_cd_agg_raceprob")
+                ref("int_voterfile_cd_agg_raceprob")
                     , demo
                     , order_by=demo
                     ),
