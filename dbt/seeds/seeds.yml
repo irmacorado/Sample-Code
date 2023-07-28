@@ -1,0 +1,9 @@
+version: 2
+
+seeds:
+  - name: fips_state_county
+    config:
+      column_types:
+        fips_state: varchar(2)
+        fips_county: varchar(3)
+        fips_statecounty: varchar(5)
