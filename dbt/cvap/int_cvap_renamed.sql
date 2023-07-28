@@ -1,23 +1,16 @@
-{{ config(materialized="table", sort=["statecode","congressionaldistrict"], diststyle='even') }}
+{{ config(materialized="table", sort=["census_bg_geoid"], distkey='census_bg_geoid') }}
 
 with cvap as (
     select * 
     from {{ ref("stg_census_cvap_2021_bg") }} 
 )
-
-, bg_to_cd as (
-    select *
-    from {{ ref("int_census_bg_to_cd")}}
-)
-
-, fips_state_county as (
-    select *
-    from {{ ref("stg_fips_state_county") }}
-)
-
 , renamed as (
-    select fips.statecode 
-    , bg_to_cd.congressionaldistrict
+    select census_bg_geoname
+    , census_bg_geoid
+    , fips_state
+    , fips_county
+    , census_tract
+    , census_bg 
     , case
         when line_title = 'American Indian or Alaska Native Alone' then 'Native American'
         when line_title = 'Asian Alone' then 'AAPI'
@@ -37,17 +30,11 @@ with cvap as (
     , sum(cit_est) as cit_est
     , sum(cvap_est) as cvap_est
     
-    from cvap
-    left join bg_to_cd on 
-        (cvap.census_bg_geoid = bg_to_cd.census_bg_geoid)
-    left join fips_state_county fips on 
-        (cvap.fips_state = fips.fips_state
-        and cvap.fips_county = fips.fips_county)
-    
+    from cvap    
     where 
         line_number not in (1,2) --remove aggregated lines (1 = Total and 2 = Not Hispanic/Latino)
 
-    {{ dbt_utils.group_by(4) }}
+    {{ dbt_utils.group_by(8) }}
 )
 
 select *
