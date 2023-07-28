@@ -1,0 +1,15 @@
+version: 2
+
+macros:
+  - name: join_on_multiple_fields
+    description: 'joins two tables on multiple (same named) fields. To use, put after the ON statement.'
+    arguments:
+      - name: field_list
+        type: list of column names
+        description: "A list of column names to be joined. These should be the same names on both tables."
+      - name: left_table
+        type: table name or alias
+        description: "The table name or alias of the right side table."
+      - name: right_table
+        type: table name or alias
+        description: "The table name or alias of the right side table."
