@@ -7,41 +7,201 @@ exposures:
         name: Irma Corado
         email: icorado@americavotes.org
     depends_on:
-      - ref('int_cvap_cd_agg_enriched')
+      - ref('fact_cvap_cd')
 
 models:
-  - name: int_votefile_cd_agg_raceprob
-    description: "Recalculation of race based off race probabilites and aggregated to CD and additional fields for the VR Analysis."
-
-  - name: int_votefile_cd_agg_pivot
-    description: "A pivot to create 1 line per State/CD with all the summed fields for the VR Analysis."
+  - name: cw_census_block_cd
+    description: "A crosswalk of Census Blocks to CD."
     tests:
         - dbt_utils.unique_combination_of_columns:
             combination_of_columns:
-              - statecode
+              - census_block_geoid
               - congressionaldistrict
+    columns:
+      - name: census_block_geoid
+        tests:
+          - unique
+          - not_null
+      - name: fips_state
+        tests:
+          - not_null
+      - name: fips_county
+        tests:
+          - not_null
+      - name: statecode 
+        tests:
+          - not_null
+      - name: countyname
+        tests:
+          - not_null
+      - name: census_tract
+        tests:
+          - not_null
+      - name: census_bg
+        tests:
+          - not_null
+      - name: census_block
+        tests:
+          - not_null
+      - name: congressionaldistrict
+        tests:
+          - not_null
 
-  - name: int_census_bg_to_cd
-    description: "A crosswalk rollup of census_blocks_to_cd at the Block Group level."
+  - name: cw_census_blockgroup_cd
+    description: "A crosswalk of Census Block Groups to CD."
     tests:
         - dbt_utils.unique_combination_of_columns:
             combination_of_columns:
               - census_bg_geoid
               - congressionaldistrict
-  - name: int_cvap_cd_renamed
-    description: "Renaming of Census ACS CVAP data to fit with AV standards."
-  - name: int_cvap_cd_agg_pivot
-    description: "A pivot to create 1 line per State/CD with all the summed fields for the VR Analysis."
+    columns:
+      - name: census_bg_geoid
+        tests:
+          - not_null
+      - name: fips_state
+        tests:
+          - not_null
+      - name: fips_county
+        tests:
+          - not_null
+      - name: statecode 
+        tests:
+          - not_null
+      - name: countyname
+        tests:
+          - not_null
+      - name: census_tract
+        tests:
+          - not_null
+      - name: census_bg
+        tests:
+          - not_null
+      - name: congressionaldistrict
+        tests:
+          - not_null
+      - name: pct_of_bg_in_cd
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              max_value: 1
+              inclusive: true
+
+  - name: int_cvap_renamed
+    description: "Renaming of Census ACS CVAP data to fit with our standards."
+    tests:
+        - dbt_utils.unique_combination_of_columns:
+            combination_of_columns:
+              - census_bg_geoid
+              - bin_race
+        - dbt_utils.expression_is_true:
+            expression: "cit_est >= cvap_est"
+        - dbt_expectations.expect_table_aggregation_to_equal_other_table:
+            expression: sum(cvap_est)
+            compare_model: ref("stg_census_cvap_2021_bg")
+            compare_expression: sum(cvap_est)
+            group_by: [fips_state]
+            compare_group_by: [fips_state]
+            compare_row_condition: line_number not in (1,2) 
+    columns:
+      - name: census_bg_geoname
+      - name: census_bg_geoid
+      - name: fips_state
+      - name: fips_county 
+      - name: census_tract
+      - name: census_bg 
+      - name: bin_race
+        tests:
+          - accepted_values:
+              values: ['AAPI', 'Black', 'Latinx', 'Native American', 'Unknown / Other', 'White']
+      - name: bin_race_bipoc
+        tests:
+          - accepted_values:
+              values: ['BIPOC', 'Unknown / Other', 'White']
+      - name: cit_est
+        description: "Census Citizen Estimate"
+      - name: cvap_est
+        description: "Census Citizen Voting-Age Estimate"
+  
+  - name: int_cvap_agg_cd
+    description: "A table to create 1 line per cd-race combo with citizen estimate and cvap estimates as metrics."
     tests:
         - dbt_utils.unique_combination_of_columns:
             combination_of_columns:
               - statecode
+              - countyname
               - congressionaldistrict
-              
-  - name: int_cvap_cd_agg_enriched
-    description: "Final table for Census ACS CVAP data and Catalist VF data at the State/CD-level."
+              - bin_race
+        - dbt_utils.expression_is_true:
+            expression: "cit_est >= cvap_est"
+        - dbt_expectations.expect_table_aggregation_to_equal_other_table:
+            expression: sum(cvap_est)
+            compare_model: ref("int_cvap_renamed")
+            compare_expression: sum(cvap_est)
+            group_by: [bin_race]
+            compare_group_by: [bin_race]
+            tolerance_percent: 0.01 
+        - dbt_expectations.expect_table_aggregation_to_equal_other_table:
+            expression: sum(cit_est)
+            compare_model: ref("int_cvap_renamed")
+            compare_expression: sum(cit_est)
+            group_by: [bin_race]
+            compare_group_by: [bin_race]
+            tolerance_percent: 0.01
+            
+  - name: int_votrfile_agg_raceprob
+    description: "Recalculation of race based off race probabilites."
+    tests:
+        - dbt_expectations.expect_table_aggregation_to_equal_other_table:
+            expression: sum(regvoters_tot)
+            compare_model: ref("int_voterfile_binned")
+            compare_expression: count(distinct dwid)
+            group_by: [statecode]
+            compare_group_by: [statecode]
+            compare_row_condition: deceased is FALSE and voterstatus in ('active','inactive')
+            tolerance_percent: 0.01 
+
+  - name: int_voterfile_districts_pivot
+    description: "A pivot to create 1 line per district-race combo with metrics for each demographic."
     tests:
         - dbt_utils.unique_combination_of_columns:
             combination_of_columns:
               - statecode
+              - countyname
               - congressionaldistrict
+              - statehousedistrict
+              - statesenatedistrict
+              - bin_race
+        - dbt_expectations.expect_table_aggregation_to_equal_other_table:
+            expression: sum(regvoters_tot)
+            compare_model: ref("int_voterfile_agg_raceprob")
+            compare_expression: sum(regvoters_tot)
+            group_by: [statecode]
+            compare_group_by: [statecode]
+            tolerance_percent: 0.01 
+        - dbt_expectations.expect_table_aggregation_to_equal_other_table:
+            expression: sum(regvoters_tot)
+            compare_model: ref("int_voterfile_binned")
+            compare_expression: count(distinct dwid)
+            group_by: [statecode]
+            compare_group_by: [statecode]
+            compare_row_condition: deceased is FALSE and voterstatus in ('active','inactive')
+            tolerance_percent: 0.01 
+
+  - name: fact_cvap_cd
+    description: "The final table for VR analysis. Parameter columns include State, CD, bin_race, and bin_race_bipoc. Metrics include Citizen estimate, CVAP estimate, Registered Voter totals, and Registered voter totals for each demographic."
+    tests:
+        - dbt_utils.unique_combination_of_columns:
+            combination_of_columns:
+              - statecode
+              - countyname
+              - congressionaldistrict
+              - bin_race
+        - dbt_utils.expression_is_true:
+            expression: "cit_est >= cvap_est"
+        - dbt_expectations.expect_table_aggregation_to_equal_other_table:
+            expression: sum(cvap_est)
+            compare_model: ref("int_cvap_agg_cd")
+            compare_expression: sum(cvap_est)
+            group_by: [statecode]
+            compare_group_by: [statecode]
+            tolerance_percent: 0.01
