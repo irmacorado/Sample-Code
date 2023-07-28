@@ -1,0 +1,47 @@
+version: 2
+
+exposures:
+  - name: vr_analysis_2022
+    type: analysis 
+    owner:
+        name: Irma Corado
+        email: icorado@americavotes.org
+    depends_on:
+      - ref('int_cvap_cd_agg_enriched')
+
+models:
+  - name: int_votefile_cd_agg_raceprob
+    description: "Recalculation of race based off race probabilites and aggregated to CD and additional fields for the VR Analysis."
+
+  - name: int_votefile_cd_agg_pivot
+    description: "A pivot to create 1 line per State/CD with all the summed fields for the VR Analysis."
+    tests:
+        - dbt_utils.unique_combination_of_columns:
+            combination_of_columns:
+              - statecode
+              - congressionaldistrict
+
+  - name: int_census_bg_to_cd
+    description: "A crosswalk rollup of census_blocks_to_cd at the Block Group level."
+    tests:
+        - dbt_utils.unique_combination_of_columns:
+            combination_of_columns:
+              - census_bg_geoid
+              - congressionaldistrict
+  - name: int_cvap_cd_renamed
+    description: "Renaming of Census ACS CVAP data to fit with AV standards."
+  - name: int_cvap_cd_agg_pivot
+    description: "A pivot to create 1 line per State/CD with all the summed fields for the VR Analysis."
+    tests:
+        - dbt_utils.unique_combination_of_columns:
+            combination_of_columns:
+              - statecode
+              - congressionaldistrict
+              
+  - name: int_cvap_cd_agg_enriched
+    description: "Final table for Census ACS CVAP data and Catalist VF data at the State/CD-level."
+    tests:
+        - dbt_utils.unique_combination_of_columns:
+            combination_of_columns:
+              - statecode
+              - congressionaldistrict
