@@ -1,11 +1,22 @@
 # Welcome to my Sample Code repo!
 Here you'll find different code that I've written to showcase my work. If you have any questions, please feel free to reach out to me.
 
-### dbt
-- Code used in dbt to transform data and create models. This example shows SQL, Jinja, and analytic skills.
-
 ### Counts and Crosstabs
 - SQL to replicate VAN's Counts and Crosstabs feature.
+
+
+## Analysis
+### 2022 TX Post-Primary Election Analysis
+- Analysis around all the work doing by an organization for a race (direct voter contact, recruitment, fundraising etc.)
+  
+### User Analysis
+- Preliminary reasearch into the user sign-up process
+
+## dbt
+- Code used in dbt to transform data and create models. This example shows SQL, Jinja, and analytic skills.
+
+
+## Data Migration
 
 ### Redshift to GoogleSheets
 - Python code to connects to a Redshift database, query, and push data into a Googlesheet.
